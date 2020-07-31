@@ -1,24 +1,20 @@
 #/usr/bin/env python3
 """
 example to build a file with all packages known to your system for a debian jessie:
-
-for i in $(ls /var/lib/apt/lists/*debian_dists_jessie_* |\
+for i in $(ls /var/lib/apt/lists/*_bionic_* |\
            grep -v i386 |grep -v Release); do
     cat $i >> /tmp/allpackages;
     echo >> /tmp/allpackages;
 done
-
 All debian based distros have a set of files in /var/lib/apt/lists.
 In doubt create a filter for your distro
-
 Install needed Python modules:
-
 pip3 install pyArango
 pip3 install deb_pkg_tools
 """
 
 import deb_pkg_tools
-from deb_pkg_tools.control import deb822_from_string
+from deb_pkg_tools.deb822 import parse_deb822
 from deb_pkg_tools.control import parse_control_fields
 from pyArango.connection import *
 from pyArango.database import *
@@ -108,10 +104,10 @@ def PackageToDict(pkg):
     for attribute in pkg.keys():
         if isinstance(pkg[attribute], deb_pkg_tools.deps.RelationshipSet):
             # relation ship field to become an array of relations:
-            ret[attribute] = DependencySetToDict(pkg[attribute], False)
+            ret[str(attribute)] = DependencySetToDict(pkg[attribute], False)
         else:
             # regular string field:
-            ret[attribute] = pkg[attribute]
+            ret[str(attribute)] = pkg[attribute]
     ret["_key"] = ret["Package"]
     return ret
 
@@ -144,7 +140,7 @@ onePackage = ''
 for line in open('/tmp/allpackages', encoding='utf-8'):
     # Package blocks are separated by new lines.
     if len(line) == 1 and len(onePackage) > 4:
-        pkg = deb822_from_string(onePackage)
+        pkg = parse_deb822(onePackage)
         pname = pkg['Package']
         pkg1 = parse_control_fields(pkg)
         p = PackageToDict(pkg1)
