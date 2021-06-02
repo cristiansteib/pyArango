@@ -13,8 +13,8 @@ pyArango
    :alt: downloads_week
    :target: https://pepy.tech/project/pyarango/week
    
-.. image:: https://travis-ci.org/tariqdaouda/pyArango.svg?branch=1.2.2
-    :target: https://travis-ci.org/tariqdaouda/pyArango
+.. image:: https://travis-ci.com/Alexsaphir/pyArango.svg?branch=master
+    :target: https://travis-ci.com/github/Alexsaphir/pyArango
 .. image:: https://img.shields.io/badge/python-2.7%2C%203.5-blue.svg
 .. image:: https://img.shields.io/badge/arangodb-3.0-blue.svg
 
@@ -29,7 +29,7 @@ Key Features
 pyArango is geared toward the developer. It's here to help to you develop really cool apps using ArangoDB, really fast.
 
  - Light and simple interface
- - Built-in validation of fields on seting or on saving
+ - Built-in validation of fields on setting or on saving
  - Support for all index types
  - Supports graphs, traversals and all types of queries
  - Caching of documents with Insertions and Lookups in O(1)
@@ -199,7 +199,7 @@ In addition, you can also define collection properties_ (creation arguments for 
 A note on inheritence
 ----------------------
 
-There is no inheritence of the "_validation" and "_fields" dictionaries.
+There is no inheritance of the "_validation" and "_fields" dictionaries.
 If a class does not fully define its own, the defaults will be automatically assigned to any missing value.
 
 Creating Edges

@@ -128,10 +128,10 @@ class Database(object):
             colProperties["type"] = CONST.COLLECTION_DOCUMENT_TYPE
 
         payload = json.dumps(colProperties, default=str)
-        r = self.connection.session.post(self.getCollectionsURL(), data = payload)
-        data = r.json()
+        req = self.connection.session.post(self.getCollectionsURL(), data = payload)
+        data = req.json()
 
-        if r.status_code == 200 and not data["error"]:
+        if req.status_code == 200 and not data["error"]:
             col = colClass(self, data)
             self.collections[col.name] = col
             return self.collections[col.name]
@@ -210,6 +210,10 @@ class Database(object):
         """returns true if the databse has a graph by the name of 'name'"""
         return name in self.graphs
 
+    def __contains__(self, name):
+        """if name in database"""
+        return self.hasCollection(name) or self.hasGraph(name)
+
     def dropAllCollections(self):
         """drops all public collections (graphs included) from the database"""
         for graph_name in self.graphs:
@@ -220,10 +224,15 @@ class Database(object):
                 self[collection_name].delete()
         return
 
-    def AQLQuery(self, query, batchSize = 100, rawResults = False, bindVars = {}, options = {}, count = False, fullCount = False,
+    def AQLQuery(self, query, batchSize = 100, rawResults = False, bindVars = None, options = None, count = False, fullCount = False,
                  json_encoder = None, **moreArgs):
         """Set rawResults = True if you want the query to return dictionnaries instead of Document objects.
         You can use **moreArgs to pass more arguments supported by the api, such as ttl=60 (time to live)"""
+        if bindVars is None:
+            bindVars = {}
+        if options is None:
+            options = {}
+
         return AQLQuery(self, query, rawResults = rawResults, batchSize = batchSize, bindVars  = bindVars, options = options, count = count, fullCount = fullCount,
                         json_encoder = json_encoder, **moreArgs)
 
@@ -330,7 +339,7 @@ class Database(object):
             batch_index = 0
             result = []
             while True:
-                if len(query.response['result']) is 0:
+                if len(query.response['result']) == 0:
                     break
                 result.extend(query.response['result'])
                 batch_index += 1
@@ -338,7 +347,7 @@ class Database(object):
         except StopIteration:
             if log is not None:
                 log(result)
-            if len(result) is not 0:
+            if len(result) != 0:
                 return result
         except:
             raise
@@ -396,7 +405,7 @@ class Database(object):
             )
             batch_index = 0
             while True:
-                if len(query.response['result']) is 0:
+                if len(query.response['result']) == 0:
                     break
                 if log is not None:
                     log(
@@ -451,12 +460,15 @@ class Database(object):
         ).response
         if log is not None:
             log(response["result"])
-        if len(response["result"]) is 0:
+        if len(response["result"]) == 0:
             return
         raise AQLFetchError("No results should be returned for the query.")
 
-    def explainAQLQuery(self, query, bindVars={}, allPlans = False):
+    def explainAQLQuery(self, query, bindVars = None, allPlans = False):
         """Returns an explanation of the query. Setting allPlans to True will result in ArangoDB returning all possible plans. False returns only the optimal plan"""
+        if bindVars is None:
+            bindVars = {}
+
         payload = {'query' : query, 'bindVars' : bindVars, 'allPlans' : allPlans}
         request = self.connection.session.post(self.getExplainURL(), data = json.dumps(payload, default=str))
         return request.json()
@@ -501,6 +513,14 @@ class Database(object):
 
     def __repr__(self):
         return "ArangoDB database: %s" % self.name
+
+    def __contains__(self, _id):
+        """allows to check if _id:str is the id of an existing document"""
+        col, key = _id.split('/')
+        try:
+            return key in self[col]
+        except KeyError:
+            return False
 
     def __getitem__(self, collectionName):
         """use database[collectionName] to get a collection from the database"""

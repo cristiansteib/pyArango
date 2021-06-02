@@ -39,6 +39,8 @@ class pyArangoTests(unittest.TestCase):
 
     def _reset(self):
         self.db.reload()
+        self.db.tasks.drop()
+
         for colName in self.db.collections:
             if not self.db[colName].isSystem:
                 self.db[colName].delete()
@@ -99,6 +101,7 @@ class pyArangoTests(unittest.TestCase):
                 count += 1
         return count
 
+    # @unittest.skip("stand by")
     def test_bulk_operations(self):
         (collection, docs) = self.createManyUsersBulk(55, 17)
         self.assertEqual(collection.count(), len(docs))
@@ -257,7 +260,7 @@ class pyArangoTests(unittest.TestCase):
 
         self.db.reloadCollections()
         ed = self.db.collections["to_be_erased"]
-        e1 = ed.createEdge_({"name": 'tesla-edge'})
+        e1 = ed.createEdge({"name": 'tesla-edge'})
         e1.links(d1, d2)
 
         # create an edge with one saved and one unsaved attribute:
@@ -336,6 +339,16 @@ class pyArangoTests(unittest.TestCase):
         doc2 = collection.fetchDocument(doc._key)
         self.assertEqual(doc._id, doc2._id)
 
+    def test_database_contains_id(self):
+        collection = self.db.createCollection(name="lala")
+        doc = collection.createDocument()
+        doc["name"] = 'iop'
+        doc.save()
+        result = doc["_id"] in self.db
+        self.assertTrue(result)
+        result = doc["_id"] + '1' in self.db
+        self.assertFalse(result)
+
     # @unittest.skip("stand by")
     def test_document_set_private_w_rest(self):
         collection = self.db.createCollection(name = "lala")
@@ -343,7 +356,7 @@ class pyArangoTests(unittest.TestCase):
             "_key": "key",
             "name": "iop"
         }
-        doc = collection.createDocument_(data)
+        doc = collection.createDocument(data)
         self.assertEqual(doc["_key"], doc._key)
         self.assertEqual(doc["_key"], data["_key"])
 
@@ -459,6 +472,19 @@ class pyArangoTests(unittest.TestCase):
 
         lstRes.sort()
         self.assertEqual(lstRes, list(range(nbUsers)))
+        self.assertEqual(q.count, nbUsers)
+
+    # @unittest.skip("stand by")
+    def test_simple_query_iterator_all_batch_rawResults_true(self):
+        nbUsers = 20
+        col = self.createManyUsers(nbUsers)
+
+        q = col.fetchAll(batchSize=5, count=True, rawResults=True)
+        lstRes = []
+        for user in q:
+            lstRes.append(user["number"])
+
+        self.assertEqual(sorted(lstRes), list(range(nbUsers)))
         self.assertEqual(q.count, nbUsers)
 
     # @unittest.skip("stand by")
@@ -996,14 +1022,17 @@ class pyArangoTests(unittest.TestCase):
 
         Connection(arangoURL=ARANGODB_URL, username="pyArangoTest_tesla", password="newpass")
 
+    # @unittest.skip("stand by")
     def test_action(self):
         response = self.db.action.get("/_admin/aardvark/index.html")
         self.assertEqual(response.status_code, 200, "Check if db is running")
-
+    
+    # @unittest.skip("stand by")
     def test_foxx_service(self):
         response = self.db.foxx.service("/_admin/aardvark").get("/index.html")
         self.assertEqual(response.status_code, 200, "Check if db is running")
 
+    # @unittest.skip("stand by")
     def test_tasks(self):
         db_tasks = self.db.tasks
         self.assertListEqual(db_tasks(), [])

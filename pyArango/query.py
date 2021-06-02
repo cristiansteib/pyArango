@@ -113,13 +113,10 @@ class Query(object):
         return self
 
     def __getitem__(self, i):
-        "returns a ith result of the query."
+        "returns a ith result of the query. Raises IndexError if we reached the end of the current batch."
         if not self.rawResults and (not isinstance(self.result[i], (Edge, Document))):
             self._developDoc(i)
-        try:
-            return self.result[i]
-        except IndexError as e:
-            self.nextBatch()
+        return self.result[i]
 
     def __len__(self):
         """Returns the number of elements in the query results"""
@@ -156,8 +153,10 @@ class AQLQuery(Query):
         except QueryError as e:
             raise AQLQueryError( message = e.message, query = self.query, errors = e.errors)
 
-    def explain(self, bindVars={}, allPlans = False):
+    def explain(self, bindVars = None, allPlans = False):
         """Returns an explanation of the query. Setting allPlans to True will result in ArangoDB returning all possible plans. False returns only the optimal plan"""
+        if bindVars is None:
+            bindVars = {}
         return self.database.explainAQLQuery(self.query, bindVars, allPlans)
 
     def _raiseInitFailed(self, request):
